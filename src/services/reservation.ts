@@ -65,8 +65,24 @@ export async function getDateFromUrl(page: Page): Promise<string> {
 }
 
 export function getISODateFromUrl(page: Page): string {
-  const seconds = page.url().split('=')[1];
-  return new Date(Number(seconds) * 1000).toISOString().split('T')[0];
+  const url = new URL(page.url());
+  const seconds = url.searchParams.get('t');
+
+  if (!seconds || !Number.isFinite(Number(seconds))) {
+    throw new Error(
+      `Invalid reservation date in URL: ${page.url()}`
+    );
+  }
+
+  const date = new Date(Number(seconds) * 1000);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new Error(
+      `Invalid reservation timestamp: ${seconds}`
+    );
+  }
+
+  return date.toISOString().split('T')[0];
 }
 
 async function findReservationButton(
