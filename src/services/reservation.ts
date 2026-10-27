@@ -45,45 +45,50 @@ export async function goToNextDay(page: Page): Promise<void> {
   await page.waitForNetworkIdle({ timeout: 5000 }).catch(() => {});
 }
 
+
+function getTimestampFromUrl(page: Page): number {
+  const url = new URL(page.url());
+  const seconds = url.searchParams.get('t');
+  const timestamp = Number(seconds);
+
+  if (!seconds || !Number.isFinite(timestamp)) {
+    throw new Error(`Invalid reservation date in URL: ${page.url()}`);
+  }
+
+  const date = new Date(timestamp * 1000);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new Error(`Invalid reservation timestamp: ${seconds}`);
+  }
+
+  return timestamp;
+}
+
 export async function getWeekDayFromUrl(page: Page): Promise<string> {
-  const url = await page.url();
-  const weekDayInSeconds = url.split('=')[1];
-  const weekDay = new Date(Number(weekDayInSeconds) * 1000);
-  return weekDay
-    .toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })
-    .toLocaleLowerCase();
+  const timestamp = getTimestampFromUrl(page);
+  return new Date(timestamp * 1000)
+    .toLocaleDateString('en-US', {
+      weekday: 'long',
+      timeZone: 'UTC',
+    })
+    .toLowerCase();
 }
 
 export async function getDateFromUrl(page: Page): Promise<string> {
-  const url = await page.url();
-  const weekDayInSeconds = url.split('=')[1];
+  const timestamp = getTimestampFromUrl(page);
   return Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-  }).format(new Date(Number(weekDayInSeconds) * 1000));
+    timeZone: 'UTC',
+  }).format(new Date(timestamp * 1000));
 }
 
 export function getISODateFromUrl(page: Page): string {
-  const url = new URL(page.url());
-  const seconds = url.searchParams.get('t');
-
-  if (!seconds || !Number.isFinite(Number(seconds))) {
-    throw new Error(
-      `Invalid reservation date in URL: ${page.url()}`
-    );
-  }
-
-  const date = new Date(Number(seconds) * 1000);
-
-  if (Number.isNaN(date.getTime())) {
-    throw new Error(
-      `Invalid reservation timestamp: ${seconds}`
-    );
-  }
-
-  return date.toISOString().split('T')[0];
+  const timestamp = getTimestampFromUrl(page);
+  return new Date(timestamp * 1000).toISOString().split('T')[0];
 }
+
 
 async function findReservationButton(
   page: Page,
