@@ -26,6 +26,8 @@ export async function goToReservations(page: Page): Promise<void> {
   const currentDomain = new URL(currentUrl).origin;
 
   await page.goto(`${currentDomain}/athlete/reservas.aspx?t=${todayInSeconds}`);
+  console.log('URL after navigating to reservations:', page.url());
+  console.log('Page title:', await page.title());
 }
 
 export async function getReservationState(
